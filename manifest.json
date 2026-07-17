@@ -1,0 +1,16 @@
+{
+  "name": "ADAPT — Adaptive Training OS",
+  "short_name": "ADAPT",
+  "description": "Intuitive training log that auto-adjusts from readiness, RPE, compliance. Intervals.icu integrated.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#C6FF2A",
+  "icons": [
+    {
+      "src": "https://api.iconify.design/lucide:activity.svg?color=%23C6FF2A",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

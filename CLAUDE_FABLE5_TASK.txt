@@ -1,0 +1,28 @@
+FABLE 5 TASK — EXECUTE AUTONOMOUSLY
+
+You are Claude in Fable 5 Cowork. Your task is defined in FABLE5_MASTER_LAUNCH_PACK.md — read that file fully, then execute it autonomously.
+
+GOAL: Launch ADAPT v2 Adaptive Training OS with Intervals.icu integration to GitHub and Vercel.
+
+SOURCE CODE: Already in this folder /home/user/adaptive-training/ — index.html is canonical app (74KB, fully functional). Do not rewrite, just deploy.
+
+CREDENTIALS NEEDED: Ask user once for:
+- GitHub username
+- Vercel login (use vercel login if needed)
+- Intervals.icu Athlete ID (i...) and API Key (store as Vercel env INTERVALS_API_KEY, never commit)
+
+STEPS (from master pack):
+1. npm install + npm run build → verify dist/index.html exists
+2. GitHub: gh auth, git add/commit/push, gh repo create adapt-training-os --public --source=. --push
+3. Verify GitHub Actions deploy to Pages → live URL
+4. Vercel: vercel link, vercel env add INTERVALS_API_KEY production/preview, vercel --prod
+5. Verify /api/intervals?endpoint=/athlete/{id} returns 200
+6. Open live Vercel app, Intervals.icu tab, Test Connection = ✅
+7. Test Push Today → ICU calendar and Pull Activities → Log
+8. Return final summary with live URLs
+
+READ FABLE5_MASTER_LAUNCH_PACK.md FOR FULL SPEC, FILE CONTENTS, TROUBLESHOOTING, SUCCESS CRITERIA.
+
+When done, update README.md with live URLs and provide summary to user.
+
+BEGIN NOW.

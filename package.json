@@ -1,0 +1,19 @@
+{
+  "name": "adapt-training-os",
+  "version": "1.0.0",
+  "description": "ADAPT — Adaptive Training OS. Highly intuitive training log that auto-adjusts intensity from readiness, RPE, and compliance. Intervals.icu integrated.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "deploy": "gh-pages -d dist",
+    "lint": "echo 'No linter configured yet'"
+  },
+  "keywords": ["training", "adaptive", "intervals.icu", "fitness", "PWA", "Fable 5"],
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "gh-pages": "^6.1.1"
+  }
+}

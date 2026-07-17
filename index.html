@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADAPT v2 — Adaptive Training OS + Intervals.icu</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#C6FF2A">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+  :root{--bg:#0a0a0b;--bg2:#141416;--card:#1a1a1e;--card2:#222227;--card3:#2a2a30;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#f5f5f7;--muted:#8e8e96;--muted2:#5a5a64;--accent:#C6FF2A;--accent2:#a5e000;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--radius:18px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.45}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(800px 400px at 20% -10%, rgba(198,255,42,0.08), transparent 60%),radial-gradient(600px 300px at 90% 0%, rgba(167,139,250,0.07), transparent),radial-gradient(700px 400px at 50% 120%, rgba(96,165,250,0.06), transparent);pointer-events:none;z-index:-1}
+  .mono{font-family:'Geist Mono',monospace}
+  button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
+  .app{max-width:1280px;margin:0 auto;padding:0 20px 120px}
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(16px) saturate(1.5);background:rgba(10,10,11,0.85);border-bottom:1px solid var(--border);margin:0 -20px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo-mark{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;color:#000;font-weight:800;font-size:14px}
+  .logo-type{font-weight:700;letter-spacing:-0.02em;font-size:17px}
+  .logo-type span{color:var(--muted)}
+  .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .streak{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:999px;font-size:13px;font-weight:500}
+  .streak b{color:var(--accent)}
+  .pill{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--card)}
+  .pill.accent{background:var(--accent);color:#000;border-color:var(--accent)}
+  .pill.live{background:rgba(34,197,94,0.15);color:#22c55e;border-color:rgba(34,197,94,0.3);display:flex;align-items:center;gap:6px}
+  .dotp{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%{opacity:1}50%{opacity:0.4}100%{opacity:1}}
+  .tabs{display:flex;gap:6px;padding:6px;background:var(--card);border:1px solid var(--border);border-radius:999px;width:fit-content;margin:22px auto 26px}
+  .tab{padding:8px 18px;border-radius:999px;font-size:14px;font-weight:500;color:var(--muted);transition:all .2s}
+  .tab.active{background:var(--text);color:#000;font-weight:600}
+  .grid{display:grid;gap:16px}
+  .grid-3{grid-template-columns:1.2fr 0.9fr 0.9fr}
+  .grid-2{grid-template-columns:1.1fr 0.9fr}
+  @media(max-width:980px){.grid-3,.grid-2{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--card) 0%,var(--bg2) 100%);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
+  .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .card-title{font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .today-hero{background:linear-gradient(135deg,var(--card2) 0%,var(--card) 100%);border-radius:var(--radius);border:1px solid rgba(198,255,42,0.22);padding:24px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:24px}
+  @media(max-width:780px){.today-hero{grid-template-columns:1fr}}
+  .readiness-dial{display:flex;gap:18px;align-items:center}
+  .dial{width:86px;height:86px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) var(--pct),var(--card3) 0)}
+  .dial-inner{width:70px;height:70px;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-weight:700;font-size:22px}
+  .readiness-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .r-group{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+  .r-group label{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;font-weight:600}
+  .r-group input{width:100%;accent-color:var(--accent)}
+  .workout-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase}
+  .badge-easy{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.25)}
+  .badge-mid{background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.25)}
+  .badge-hard{background:rgba(239,68,68,0.14);color:#ef4444;border:1px solid rgba(239,68,68,0.24)}
+  .badge-recovery{background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.24)}
+  .workout-title{font-size:28px;font-weight:700;letter-spacing:-0.03em;margin:12px 0 8px;line-height:1.1}
+  .workout-meta{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .meta-chip{font-size:12px;padding:6px 10px;border-radius:999px;background:var(--card3);border:1px solid var(--border);color:var(--muted)}
+  .adapt-note{background:var(--bg);border:1px dashed var(--border2);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--muted);display:flex;gap:10px;margin-top:14px}
+  .btn{padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn-primary{background:var(--accent);color:#000}
+  .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+  .btn-ghost{background:var(--card3);border:1px solid var(--border);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--border2)}
+  .btn-sm{padding:8px 12px;font-size:13px;border-radius:9px}
+  .btn:disabled{opacity:.5;pointer-events:none}
+  .week-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .week-strip::-webkit-scrollbar{display:none}
+  .day-card{min-width:148px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;flex-shrink:0;transition:.15s}
+  .day-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+  .day-card.today{border-color:var(--accent);box-shadow:0 0 0 1px rgba(198,255,42,0.3) inset}
+  .day-card.done{opacity:0.7}
+  .day-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .day-name{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-weight:600}
+  .check{width:20px;height:20px;border-radius:50%;border:1px solid var(--border2);display:grid;place-items:center;font-size:11px}
+  .day-card.done .check{background:var(--accent);border-color:var(--accent);color:#000}
+  .day-title{font-size:14px;font-weight:600;margin:6px 0 8px;line-height:1.2;min-height:34px}
+  .log-item{display:flex;gap:14px;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--border);align-items:center;transition:.15s}
+  .log-item:hover{border-color:var(--border2);background:var(--card2)}
+  .log-icon{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+  .log-main{flex:1;min-width:0}
+  .log-title{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .log-sub{font-size:12px;color:var(--muted);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+  .rpe-bar{height:4px;background:var(--card3);border-radius:999px;overflow:hidden;margin-top:8px;width:100px}
+  .rpe-fill{height:100%;border-radius:999px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-head{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted2);text-align:center;padding:6px 0;font-weight:600}
+  .cal-day{aspect-ratio:1;border-radius:10px;background:var(--card);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;position:relative;cursor:pointer}
+  .cal-day.has-log::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);position:absolute;bottom:5px}
+  .cal-day.today{border-color:var(--accent)}
+  .bar-row{display:flex;align-items:center;gap:12px;margin:10px 0}
+  .bar-label{width:42px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase}
+  .bar-track{flex:1;height:8px;background:var(--card3);border-radius:999px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:999px}
+  .fab{position:fixed;bottom:24px;right:24px;z-index:30;width:56px;height:56px;border-radius:18px;background:var(--accent);color:#000;display:grid;place-items:center;font-size:26px;box-shadow:0 10px 30px rgba(198,255,42,0.35);transition:transform .15s}
+  .fab:hover{transform:translateY(-2px) scale(1.02)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);z-index:50;display:none;place-items:center;padding:20px}
+  .overlay.open{display:grid}
+  .modal{width:100%;max-width:520px;background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:22px;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .close{width:32px;height:32px;border-radius:10px;background:var(--card3);display:grid;place-items:center}
+  .field{margin-bottom:14px}
+  .field label{font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+  .input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font:inherit;font-size:14px;outline:none}
+  .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(198,255,42,0.15)}
+  .chip-group{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:500;color:var(--muted)}
+  .chip.active{background:var(--text);color:#000;border-color:var(--text);font-weight:600}
+  .onboard{max-width:560px}
+  .onboard-step{display:none}
+  .onboard-step.active{display:block}
+  .progress-dots{display:flex;gap:6px;margin:12px 0 20px}
+  .dot{width:28px;height:4px;border-radius:999px;background:var(--card3)}
+  .dot.active{background:var(--accent)}
+  .empty{padding:36px 20px;text-align:center;border:1px dashed var(--border2);border-radius:16px;color:var(--muted)}
+  .tip{font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:8px 12px;border-radius:10px;margin-top:10px}
+  canvas{width:100%;height:160px;display:block}
+  .kpi{display:flex;flex-direction:column;gap:2px}
+  .kpi b{font-size:28px;font-weight:700;letter-spacing:-0.03em}
+  .kpi span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+  .intervals-badge{display:inline-flex;align-items:center;gap:6px;background:#0f1d2e;border:1px solid rgba(96,165,250,0.3);color:#60a5fa;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700}
+  .switch{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .switch input{display:none}
+  .switch-track{width:36px;height:22px;background:var(--card3);border-radius:999px;position:relative;transition:.2s}
+  .switch-thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .switch-track{background:var(--accent)}
+  .switch input:checked + .switch-track .switch-thumb{transform:translateX(14px);background:#000}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">A</div><div class="logo-type">ADAPT <span>v2 / TRAIN + ICU</span></div></div>
+  <div class="header-right">
+    <div id="icuStatus" class="pill live" style="display:none"><span class="dotp"></span> <span id="icuStatusText">ICU Live</span></div>
+    <div class="streak"><span>🔥</span> <b id="streakVal">0</b> streak</div>
+    <button class="pill" id="icuBtn" style="border-color:rgba(96,165,250,0.4);color:#60a5fa">◉ Intervals.icu</button>
+    <button class="pill" id="exportBtn">Export</button>
+    <button class="pill accent" id="openOnboard">Setup</button>
+  </div>
+</header>
+
+<div class="app">
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="today">Today</button>
+    <button class="tab" data-tab="plan">Plan</button>
+    <button class="tab" data-tab="log">Log</button>
+    <button class="tab" data-tab="insights">Insights</button>
+    <button class="tab" data-tab="icu">Intervals.icu</button>
+  </div>
+
+  <section id="view-today">
+    <div class="grid grid-2">
+      <div class="today-hero">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center"><div id="todayBadge" class="workout-badge badge-mid">MODERATE • 48 MIN</div><div id="icuLinkedBadge" class="intervals-badge" style="display:none">↗ ICU SYNCED</div></div>
+          <div id="todayTitle" class="workout-title">Tempo Builder</div>
+          <div id="todayDesc" style="color:var(--muted);font-size:14px;line-height:1.5">This will adapt after your morning check-in. Log readiness first.</div>
+          <div class="workout-meta" id="todayMeta"></div>
+          <div class="adapt-note" id="adaptNote"><span>🧠</span><div>ADAPT AI: Waiting for your check-in. I adjust intensity, volume, and exercise selection based on sleep, soreness, RPE trends, and missed sessions — no guilt, just smart progression.</div></div>
+          <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+            <button class="btn btn-primary" id="completeToday">✓ Mark done + Log RPE</button>
+            <button class="btn btn-ghost" id="skipToday">Swap / Skip</button>
+            <button class="btn btn-ghost" id="pushToIcuBtn" style="color:#60a5fa;border-color:rgba(96,165,250,0.3)">↗ Push to ICU</button>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="background:var(--bg);margin-bottom:12px">
+            <div class="card-head"><div class="card-title">Morning readiness</div><div class="mono" style="font-size:11px;color:var(--muted)" id="readinessStatus">NOT CHECKED</div></div>
+            <div class="readiness-dial"><div class="dial" id="dial" style="--pct:35%"><div class="dial-inner" id="dialScore">--</div></div><div><div style="font-weight:700;font-size:15px" id="readinessLabel">Tap check-in</div><div style="font-size:12px;color:var(--muted);margin-top:2px" id="readinessSub">5 sliders, 12 sec</div></div></div>
+            <div class="readiness-controls">
+              <div class="r-group"><label>Sleep <span id="v-sleep">3</span></label><input type="range" min="1" max="5" value="3" id="rng-sleep"></div>
+              <div class="r-group"><label>Soreness <span id="v-sore">3</span></label><input type="range" min="1" max="5" value="3" id="rng-sore"></div>
+              <div class="r-group"><label>Stress <span id="v-stress">3</span></label><input type="range" min="1" max="5" value="3" id="rng-stress"></div>
+              <div class="r-group"><label>Motivation <span id="v-motiv">3</span></label><input type="range" min="1" max="5" value="3" id="rng-motiv"></div>
+            </div>
+            <div class="r-group" style="margin-top:10px"><label>Energy right now <span id="v-energy">3</span></label><input type="range" min="1" max="5" value="3" id="rng-energy"></div>
+            <button class="btn btn-primary" style="width:100%;margin-top:12px" id="saveReadiness">Update Today's Plan →</button>
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+            <div class="card" style="padding:14px"><div class="kpi"><span>Compliance 7d</span><b id="kpiComp">—</b></div><div class="rpe-bar"><div id="kpiCompFill" class="rpe-fill" style="width:40%;background:var(--accent)"></div></div></div>
+            <div class="card" style="padding:14px"><div class="kpi"><span>Fatigue</span><b id="kpiFatigue">Low</b></div><div style="font-size:11px;color:var(--muted);margin-top:4px" id="kpiFatigueSub">based on RPE trend</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <div class="card"><div class="card-head"><div class="card-title">This week <b style="color:var(--muted)">auto-adapts</b></div><button class="btn btn-ghost btn-sm" id="regenPlan">Regenerate</button></div><div class="week-strip" id="weekStrip"></div><div class="tip">💡 Missed Monday? ADAPT redistributes volume. Hit RPE 9 three times? Next week drops 8% intensity. Hit everything easy? We add +5% progressive overload. Intervals.icu load auto-syncs if connected.</div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Quick add</div><div class="pill" style="font-size:10px">saves to ADAPT + ICU</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-ghost" data-quick="run">🏃 Run</button><button class="btn btn-ghost" data-quick="strength">🏋️ Lift</button><button class="btn btn-ghost" data-quick="cycle">🚴 Cycle</button><button class="btn btn-ghost" data-quick="mobility">🧘 Mobility</button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-plan" style="display:none">
+    <div class="grid grid-3">
+      <div class="grid" style="gap:16px">
+        <div class="card"><div class="card-head"><div class="card-title">Adaptive roadmap — <b id="planGoalLabel">HYBRID</b></div><div class="pill mono" id="planPhase">BASE • WK 2/6</div></div><div id="planList" class="grid" style="gap:10px"></div><button class="btn btn-ghost" style="width:100%;margin-top:12px" id="pushWeekToIcu">↗ Push next 7 days to Intervals.icu</button></div>
+      </div>
+      <div class="grid" style="gap:16px">
+        <div class="card"><div class="card-head"><div class="card-title">Load management</div><div id="icuLoadBadge" class="intervals-badge" style="display:none">ICU ATL/CTL</div></div><canvas id="loadCanvas" width="600" height="320"></canvas><div style="display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--muted)"><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:6px"></span>Actual load</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--card3);margin-right:6px"></span>Planned</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--blue);margin-right:6px"></span>ICU Fitness</span></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Rules governing your plan</div></div><div style="font-size:13px;color:var(--muted);display:grid;gap:10px"><div>▸ <b style="color:var(--text)">Readiness &lt; 40%</b> → swap hard → recovery, keep habit</div><div>▸ <b style="color:var(--text)">RPE 9+ twice</b> → −10% volume next 2 sessions (syncs to ICU as reduced TSS)</div><div>▸ <b style="color:var(--text)">RPE ≤6 three times</b> → +5% volume</div><div>▸ <b style="color:var(--text)">ICU ATL &gt; 1.6×CTL</b> → auto deload flag</div></div></div>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">Coach notes</div></div><div id="coachNotes" style="display:grid;gap:12px"></div></div>
+    </div>
+  </section>
+
+  <section id="view-log" style="display:none">
+    <div class="grid grid-2">
+      <div style="display:grid;gap:16px">
+        <div class="card"><div class="card-head"><div class="card-title">Training calendar</div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" id="prevMonth">‹</button><div class="pill mono" id="calMonth">JULY 2026</div><button class="btn btn-ghost btn-sm" id="nextMonth">›</button></div></div><div class="cal-grid" id="calHead"></div><div class="cal-grid" id="calGrid"></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Volume breakdown</div></div><div id="volumeBreakdown"></div></div>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">History — <b id="logCount">0 entries</b></div><div style="display:flex;gap:8px"><select id="logFilter" class="input" style="width:auto;padding:6px 10px"><option value="all">All types</option><option value="run">Run</option><option value="strength">Strength</option><option value="cycle">Cycle</option><option value="mobility">Mobility</option><option value="other">Other</option></select><button class="btn btn-ghost btn-sm" id="importIcuBtn" style="color:#60a5fa">↓ Import ICU</button></div></div><div id="logList" class="grid" style="gap:10px;max-height:720px;overflow:auto;padding-right:4px"></div></div>
+    </div>
+  </section>
+
+  <section id="view-insights" style="display:none">
+    <div class="grid grid-3">
+      <div class="card"><div class="kpi"><span>Best streak</span><b id="insStreak">0 days</b></div><div style="margin-top:12px;font-size:13px;color:var(--muted)">Consistency beats intensity. ADAPT rewards showing up, even for 12-min recovery.</div></div>
+      <div class="card"><div class="kpi"><span>Avg RPE</span><b id="insRpe">—</b></div><div class="bar-row"><div class="bar-label">Load</div><div class="bar-track"><div id="insRpeBar" class="bar-fill" style="width:50%;background:var(--yellow)"></div></div></div></div>
+      <div class="card"><div class="kpi"><span>Adaptations</span><b id="insAdapt">0</b></div><div style="font-size:13px;color:var(--muted);margin-top:8px" id="insAdaptDesc">Times we made it easier so you could stay in the game.</div></div>
+    </div>
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="card"><div class="card-head"><div class="card-title">Progress trend (last 30 logs)</div></div><canvas id="trendCanvas" width="700" height="340"></canvas></div>
+      <div class="card"><div class="card-head"><div class="card-title">What to focus next</div></div><div id="focusList" style="display:grid;gap:12px"></div><div class="tip" style="margin-top:16px">ADAPT isn't a static plan. It's a control loop: log → sense fatigue/readiness → adjust → keep you at 70-85% effort, where growth lives. Intervals.icu CTL/ATL auto-adjusts guardrails when connected.</div></div>
+    </div>
+  </section>
+
+  <section id="view-icu" style="display:none">
+    <div class="grid grid-2">
+      <div class="grid" style="gap:16px">
+        <div class="card"><div class="card-head"><div class="card-title">Intervals.icu — Sync Center</div><div id="icuConnPill" class="pill">Not connected</div></div>
+          <div style="display:grid;gap:14px">
+            <div class="field"><label>Athlete ID (e.g. i123456)</label><input id="icuAthleteId" class="input" placeholder="i..."></div>
+            <div class="field"><label>API Key (from intervals.icu /settings)</label><input id="icuApiKey" type="password" class="input" placeholder="API Key — stored locally only"></div>
+            <div class="field"><label>Proxy Mode (for production)</label><div class="switch"><input type="checkbox" id="icuUseProxy"><div class="switch-track"><div class="switch-thumb"></div></div><span style="font-size:13px;color:var(--muted)">Use /api/intervals proxy (Vercel/Cloudflare) to avoid CORS — set INTERVALS_API_KEY env var server-side</span></div></div>
+            <div class="field" id="proxyField" style="display:none"><label>Proxy URL</label><input id="icuProxyUrl" class="input" value="/api/intervals"></div>
+            <div style="display:flex;gap:10px"><button class="btn btn-primary" id="testIcuBtn" style="flex:1">Test Connection</button><button class="btn btn-ghost" id="saveIcuBtn" style="flex:1">Save Locally</button></div>
+            <div id="icuTestResult" class="tip" style="display:none"></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><div class="card-title">Quick Actions</div></div>
+          <div style="display:grid;gap:10px">
+            <button class="btn btn-ghost" id="actionFetchActivities">↓ Pull last 30 days activities → ADAPT log</button>
+            <button class="btn btn-ghost" id="actionFetchWellness">↓ Pull wellness / ATL / CTL / HRV</button>
+            <button class="btn btn-ghost" id="actionPushPlan">↗ Push 14-day plan as workouts to ICU calendar</button>
+            <button class="btn btn-ghost" id="actionPushToday">↗ Push today's adapted workout to ICU</button>
+          </div>
+          <div class="tip">How it works: We use Basic Auth <code>API_KEY:your_key</code>. If you deploy to Vercel, set <code>INTERVALS_API_KEY</code> env var and enable Proxy Mode so key never hits client. Docs in <code>docs/INTERVALS_ICU_INTEGRATION.md</code>.</div>
+        </div>
+      </div>
+      <div class="grid" style="gap:16px">
+        <div class="card"><div class="card-head"><div class="card-title">Latest from Intervals.icu</div><div class="pill mono" id="icuLastSync">Never</div></div><div id="icuActivities" class="grid" style="gap:10px;max-height:480px;overflow:auto"><div class="empty">Connect and hit Pull to see activities. They will auto-convert to ADAPT logs with load.</div></div></div>
+        <div class="card"><div class="card-head"><div class="card-title">Wellness & Form</div></div><div id="icuWellness" style="font-size:13px;color:var(--muted)">No data yet. Pull wellness to see ATL, CTL, HRV, RHR, sleep.</div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<button class="fab" id="fab">+</button>
+
+<div class="overlay" id="logOverlay"><div class="modal"><div class="modal-head"><h3 id="logModalTitle">Log workout</h3><button class="close" data-close="logOverlay">✕</button></div><div class="field"><label>Type</label><div class="chip-group" id="logTypeChips"><button class="chip active" data-type="run">Run</button><button class="chip" data-type="strength">Strength</button><button class="chip" data-type="cycle">Cycle</button><button class="chip" data-type="mobility">Mobility</button><button class="chip" data-type="other">Other</button></div></div><div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><div class="field"><label>Date</label><input id="logDate" type="date" class="input"></div><div class="field"><label>Duration (min)</label><input id="logDuration" type="number" class="input" value="45"></div></div><div class="field"><label>Title</label><input id="logTitle" class="input" placeholder="e.g., Easy 5K + Strides"></div><div class="field"><label>RPE — How hard? <span id="logRpeVal" style="color:var(--text)">6</span>/10 • <span id="logRpeTxt" style="color:var(--muted)">Moderate</span></label><input id="logRpe" type="range" min="1" max="10" value="6" class="input" style="padding:0"></div><div class="field"><label>Notes / Feel</label><textarea id="logNotes" rows="3" class="input" placeholder="What worked, what felt off, any pain?"></textarea></div><div class="field" style="display:flex;gap:8px;align-items:center"><label style="margin:0"><input type="checkbox" id="logPushIcu" checked> Push to Intervals.icu if connected</label></div><div style="display:flex;gap:10px;margin-top:10px"><button class="btn btn-primary" style="flex:1" id="saveLogBtn">Save to log</button><button class="btn btn-ghost" id="deleteLogBtn" style="display:none">Delete</button></div></div></div>
+
+<div class="overlay" id="icuOverlay"><div class="modal"><div class="modal-head"><h3>Intervals.icu Integration</h3><button class="close" data-close="icuOverlay">✕</button></div><div style="font-size:13px;color:var(--muted);line-height:1.6"><p><b style="color:var(--text)">Step 1:</b> In Intervals.icu → Settings → API Key → copy.</p><p><b style="color:var(--text)">Step 2:</b> Athlete ID is in URL: <code>intervals.icu/athlete/i12345/...</code></p><p><b style="color:var(--text)">Step 3:</b> Paste here. For production, use Vercel env vars per <code>docs/</code>.</p><br><div id="icuQuickSetup"></div></div></div></div>
+
+<div class="overlay" id="onboardOverlay"><div class="modal onboard"><div class="modal-head"><h3>Setup your ADAPT engine</h3><button class="close" data-close="onboardOverlay">✕</button></div><div class="progress-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div><div class="onboard-step active" data-step="1"><div class="field"><label>Primary goal</label><div class="chip-group" id="goalChips"><button class="chip active" data-goal="hybrid">Hybrid — look good, move well</button><button class="chip" data-goal="endurance">Endurance — 5K / Half</button><button class="chip" data-goal="strength">Strength — muscle & PRs</button><button class="chip" data-goal="fatloss">Fat loss + conditioning</button></div></div><div class="field"><label>Experience</label><div class="chip-group" id="levelChips"><button class="chip" data-level="beginner">Beginner — &lt;6 mo</button><button class="chip active" data-level="intermediate">Intermediate — 6-24 mo</button><button class="chip" data-level="advanced">Advanced — 2+ years</button></div></div><div class="field"><label>Days / week</label><select id="daysPerWeek" class="input"><option value="3">3 days</option><option value="4" selected>4 days</option><option value="5">5 days</option><option value="6">6 days</option></select></div><button class="btn btn-primary" style="width:100%;margin-top:12px" id="toStep2">Next →</button></div><div class="onboard-step" data-step="2"><div class="field"><label>Equipment</label><div class="chip-group" id="equipChips"><button class="chip active" data-eq="gym">Gym access</button><button class="chip" data-eq="dumbbells">Dumbbells only</button><button class="chip" data-eq="bodyweight">Bodyweight</button><button class="chip active" data-eq="run">Can run</button><button class="chip" data-eq="bike">Has bike</button></div></div><div class="field"><label>Typical session length</label><select id="sessionLen" class="input"><option value="30">30 min</option><option value="45" selected>45 min</option><option value="60">60 min</option><option value="75">75+ min</option></select></div><div class="field"><label>Anything to avoid?</label><input id="avoidInput" class="input" placeholder="e.g., no back squat, bad knees"></div><div style="display:flex;gap:10px;margin-top:12px"><button class="btn btn-ghost" style="flex:1" id="backTo1">Back</button><button class="btn btn-primary" style="flex:1" id="toStep3">Next →</button></div></div><div class="onboard-step" data-step="3"><div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px"><div style="font-weight:700;margin-bottom:6px">How ADAPT works + ICU</div><div style="font-size:13px;color:var(--muted);line-height:1.6">1. Morning readiness (12 sec).<br>2. Plan auto-adjusts for fatigue.<br>3. Log RPE → overload or deload.<br>4. If Intervals.icu connected: load, ATL/CTL, HRV calibrate guardrails automatically. Push adapted plan to ICU calendar.</div></div><button class="btn btn-primary" style="width:100%" id="finishOnboard">Generate my adaptive plan ✨</button><div class="tip">Everything saved locally. Export anytime. No login. ICU key stays local unless you use server proxy.</div></div></div></div>
+
+<div class="overlay" id="swapOverlay"><div class="modal"><div class="modal-head"><h3>Swap today's workout</h3><button class="close" data-close="swapOverlay">✕</button></div><div id="swapOptions" style="display:grid;gap:10px"></div></div></div>
+
+<script>
+const LS_KEY='adapt_v3_state';
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const defaultState={
+  profile:{goal:'hybrid',level:'intermediate',days:4,equip:['gym','run'],sessionLen:45,avoid:''},
+  readiness:{sleep:3,sore:3,stress:3,motiv:3,energy:3,score:55,checked:false,date:null},
+  workouts:[],plan:[],stats:{streak:0,adaptations:0,bestStreak:0},
+  calCursor:new Date().toISOString().slice(0,10),
+  editingId:null,
+  intervals:{apiKey:'',athleteId:'',useProxy:false,proxyUrl:'/api/intervals',connected:false,lastSync:null,lastWellness:null, cacheActivities:[]}
+};
+let state=loadState();
+function loadState(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return structuredClone(defaultState);const p=JSON.parse(raw);return {...structuredClone(defaultState),...p,profile:{...defaultState.profile,...(p.profile||{})},intervals:{...defaultState.intervals,...(p.intervals||{})}}}catch{return structuredClone(defaultState)}}
+function saveState(){localStorage.setItem(LS_KEY,JSON.stringify(state));}
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().slice(0,10)}
+function fmtDate(s){const d=new Date(s+'T12:00:00');return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+function dow(s){return new Date(s+'T12:00:00').toLocaleDateString(undefined,{weekday:'short'})}
+
+const LIB={
+  endurance:{easy:{title:'Easy Aerobic',type:'run',dur:40,rpe:5,desc:'Zone 2 conversational pace. Build base without fatigue.',badge:'easy'},tempo:{title:'Tempo Builder',type:'run',dur:48,rpe:7,desc:'Warmup 10′ easy, 3×7′ at comfortably hard (RPE 7.5) w/ 2′ jog, cooldown 10′.',badge:'mid'},interval:{title:'VO2 Intervals',type:'run',dur:50,rpe:8,desc:'6×3′ hard @ RPE 8.5 with 2′ easy.',badge:'hard'},long:{title:'Long Endurance',type:'run',dur:70,rpe:6,desc:'Steady long effort.',badge:'mid'},recovery:{title:'Recovery Flow',type:'mobility',dur:25,rpe:3,desc:'Walk + mobility + breath.',badge:'recovery'}},
+  strength:{push:{title:'Push Power',type:'strength',dur:50,rpe:7,desc:'Bench 4×5, OHP 3×8, Dips, Triceps+core.',badge:'mid'},pull:{title:'Pull Strength',type:'strength',dur:50,rpe:7,desc:'Deadlift/Row 4×5, Pullups 4×, Biceps, Rear delts.',badge:'mid'},legs:{title:'Legs + Core',type:'strength',dur:55,rpe:8,desc:'Squat 4×5, RDL 3×8, Split squat, Calf+abs.',badge:'hard'},full:{title:'Full Body Pump',type:'strength',dur:45,rpe:6,desc:'Compound+accessory supersets.',badge:'mid'},recovery:{title:'Mobility + Flush',type:'mobility',dur:25,rpe:2,desc:'Sled/walk + mobility.',badge:'recovery'}},
+  hybrid:{upper:{title:'Upper Strength',type:'strength',dur:48,rpe:7,desc:'Bench/Row 4×6, OHP+Pullups, arms.',badge:'mid'},lower:{title:'Lower + Sprint',type:'strength',dur:50,rpe:7,desc:'Squat 4×5, RDL 3×10, 6×20m sprints.',badge:'hard'},cond:{title:'Conditioning Engine',type:'cycle',dur:40,rpe:8,desc:'AMRAP 30′: 15 cal bike, 12 burpees, 9 KB swings.',badge:'hard'},easyRun:{title:'Easy Miles',type:'run',dur:35,rpe:5,desc:'Shakeout run, nose breathing, 4×20s strides.',badge:'easy'},full:{title:'Full Body + Core',type:'strength',dur:45,rpe:6,desc:'EMOM style, DBs, core 10′.',badge:'mid'},recovery:{title:'Reset & Move',type:'mobility',dur:22,rpe:2,desc:'Walk 15′ + mobility + breathing.',badge:'recovery'}},
+  fatloss:{circ:{title:'Fat Loss Circuit',type:'strength',dur:42,rpe:8,desc:'3 rounds: Squat x12, Pushup x12, Row x12, Lunge x10, Plank 45s.',badge:'hard'},strides:{title:'Intervals + Core',type:'run',dur:38,rpe:8,desc:'8×1′ hard/1′ easy, 8′ core.',badge:'hard'},walk:{title:'Walk + Lift Light',type:'strength',dur:40,rpe:5,desc:'Incline walk 20′ + light DB circuit.',badge:'easy'},full:{title:'Metcon Mix',type:'cycle',dur:44,rpe:7,desc:'Bike 12 cal, 12 thrusters, 12 situps — 4 rnds.',badge:'mid'},recovery:{title:'Low Stress Move',type:'mobility',dur:20,rpe:2,desc:'Easy walk + stretch.',badge:'recovery'}}
+};
+function libraryForGoal(g){return LIB[g]||LIB.hybrid}
+function generatePlan(){const {goal,days,level}=state.profile;const lib=libraryForGoal(goal);const keys=Object.keys(lib).filter(k=>k!=='recovery');const start=todayStr();const plan=[];const daysCount=parseInt(days);const total=28;for(let i=0;i<total;i++){const date=addDays(start,i);const isTrain=(i%7)<daysCount;if(!isTrain){if(i%7===6)plan.push({date,...lib.recovery,planned:true,source:'base',id:'p_'+date});else if(Math.random()>0.5)plan.push({date,...lib.recovery,planned:true,source:'base',id:'p_'+date});continue}const pick=lib[keys[i%keys.length]];let dur=pick.dur;if(level==='beginner')dur=Math.round(dur*0.8);if(level==='advanced')dur=Math.round(dur*1.15);if(state.profile.sessionLen)dur=Math.round((dur+parseInt(state.profile.sessionLen))/2);plan.push({date,title:pick.title,desc:pick.desc,type:pick.type,dur,rpe:pick.rpe,badge:pick.badge,planned:true,source:'base',id:'p_'+date})}state.plan=plan;saveState()}
+function calcReadinessScore(){const {sleep,sore,stress,motiv,energy}=state.readiness;const score=Math.round(((sleep*1.2)+((6-sore)*1.1)+((6-stress)*0.9)+motiv+energy)/5.2*20);return Math.max(12,Math.min(98,score))}
+function adaptToday(){const t=todayStr();const todayPlan=state.plan.find(p=>p.date===t);if(!todayPlan)return null;const readiness=state.readiness.score??55;const recent=state.workouts.slice(-5);const avgRpe=recent.length?recent.reduce((a,b)=>a+b.rpe,0)/recent.length:6;const missed=state.plan.filter(p=>p.date<t && !state.workouts.some(w=>w.date===p.date)).length;let adapted={...todayPlan};let reason=[];let adaptations=0;if(!state.readiness.checked){adapted.adaptNote="Check readiness to personalize today. Baseline shown.";return adapted}if(readiness<38){adapted.title="Recovery First";adapted.desc=`Readiness low (${readiness}%). 18-25 min walk + mobility + 5 min breath. Habit > hero.`;adapted.type='mobility';adapted.dur=22;adapted.rpe=3;adapted.badge='recovery';reason.push(`Readiness ${readiness}% → recovery swap`);adaptations++}else if(readiness<58){if(['hard'].includes(todayPlan.badge)){adapted.dur=Math.round(todayPlan.dur*0.7);adapted.desc="Downgraded: "+todayPlan.desc+" — Cut 1 set, 30% intensity. Target RPE 5-6.";adapted.badge='mid';adapted.rpe=Math.max(4,todayPlan.rpe-2);reason.push(`Readiness ${readiness}% → -30%`);adaptations++}}else if(readiness>85 && avgRpe<6){adapted.dur=Math.round(todayPlan.dur*1.1);adapted.rpe=Math.min(9,todayPlan.rpe+1);adapted.desc=todayPlan.desc+" — Add one progression set or +5% load. Cap RPE 8.";reason.push(`Readiness ${readiness}% + easy RPE ${avgRpe.toFixed(1)} → +10%`);adaptations++}
+ // ICU guardrail: if ATL high vs CTL
+ if(state.intervals.lastWellness && state.intervals.lastWellness.ctl && state.intervals.lastWellness.atl){
+   const {atl,ctl}=state.intervals.lastWellness;
+   if(atl && ctl && atl/ctl>1.5 && adapted.badge==='hard'){adapted.badge='mid';adapted.rpe=Math.max(5,adapted.rpe-1);reason.push(`ICU ATL ${atl.toFixed(1)} vs CTL ${ctl.toFixed(1)} (${(atl/ctl).toFixed(2)}×) → hard → mid to protect form`);adaptations++}
+ }
+ if(avgRpe>=8.5){adapted.dur=Math.round(adapted.dur*0.85);reason.push(`High fatigue avg RPE ${avgRpe.toFixed(1)} → -15%`);adaptations++}
+ if(missed>=2 && adapted.badge==='hard'){adapted.badge='mid';adapted.rpe=Math.max(5,adapted.rpe-2);reason.push(`${missed} missed → hard pulled back`);adaptations++}
+ if(reason.length===0)reason.push("On track. +2-5% progressive overload vs last similar.");
+ adapted.adaptNote=reason.join(' • ');adapted.adaptCount=adaptations;return adapted}
+
+// ===== Intervals.icu Integration =====
+async function intervalsFetch(endpoint, method='GET', body=null){
+  const cfg=state.intervals;
+  if(!cfg.athleteId || (!cfg.apiKey && !cfg.useProxy)) throw new Error('Intervals.icu not configured');
+  const apiKey=cfg.apiKey;
+  let url;
+  if(cfg.useProxy){
+    const proxy=cfg.proxyUrl||'/api/intervals';
+    url=`${proxy}?endpoint=${encodeURIComponent(endpoint)}&athleteId=${encodeURIComponent(cfg.athleteId)}`;
+  }else{
+    url=`https://intervals.icu/api/v1${endpoint}`;
+  }
+  const headers={'Content-Type':'application/json'};
+  if(cfg.useProxy){
+    if(apiKey) headers['x-api-key']=apiKey;
+  }else{
+    headers['Authorization']='Basic '+btoa(`API_KEY:${apiKey}`);
+  }
+  const opts={method,headers};
+  if(body && method!=='GET') opts.body=JSON.stringify(body);
+  const resp=await fetch(url,opts);
+  const txt=await resp.text();
+  let data; try{data=JSON.parse(txt)}catch{data=txt}
+  if(!resp.ok) throw new Error(`ICU ${resp.status}: ${typeof data==='string'? data : JSON.stringify(data).slice(0,300)}`);
+  return data;
+}
+async function testIcuConnection(){
+  const btn=$('#testIcuBtn'); btn.disabled=true; btn.textContent='Testing...';
+  const resEl=$('#icuTestResult'); resEl.style.display='block'; resEl.textContent='Testing...';
+  try{
+    saveIcuFromInputs();
+    const endpoint=`/athlete/${state.intervals.athleteId}`;
+    const data=await intervalsFetch(endpoint);
+    resEl.textContent=`✅ Connected! Athlete: ${data.name||data.display_name||state.intervals.athleteId} — ${data.email||''}`;
+    resEl.style.background='rgba(34,197,94,0.1)'; resEl.style.borderColor='rgba(34,197,94,0.25)';
+    state.intervals.connected=true; saveState(); updateIcuUI();
+  }catch(e){
+    resEl.textContent=`❌ Failed: ${e.message}. Tip: If CORS error, enable Proxy Mode + deploy to Vercel with env INTERVALS_API_KEY.`;
+    resEl.style.background='rgba(239,68,68,0.1)'; state.intervals.connected=false; saveState(); updateIcuUI();
+  }finally{btn.disabled=false; btn.textContent='Test Connection'}
+}
+async function fetchIcuActivities(){
+  const btn=$('#actionFetchActivities'); const orig=btn.textContent; btn.textContent='Pulling...'; btn.disabled=true;
+  try{
+    const now=new Date(); const oldest=addDays(todayStr(),-30);
+    const endpoint=`/athlete/${state.intervals.athleteId}/activities?oldest=${oldest}&newest=${todayStr()}`;
+    const activities=await intervalsFetch(endpoint);
+    state.intervals.cacheActivities=activities; state.intervals.lastSync=new Date().toISOString();
+    // Convert to ADAPT workouts, avoid dupes by ICU id
+    const existingIds=new Set(state.workouts.map(w=>w.icuId).filter(Boolean));
+    let imported=0;
+    activities.forEach(a=>{
+      if(existingIds.has(a.id)) return;
+      const typeMap={Run:'run',Ride:'cycle','VirtualRide':'cycle',WeightTraining:'strength',Workout:'strength',Walk:'mobility',Yoga:'mobility'};
+      const w={
+        id:'w_icu_'+a.id,
+        icuId:a.id,
+        date:a.start_date_local ? a.start_date_local.slice(0,10) : todayStr(),
+        duration: Math.round((a.moving_time||a.elapsed_time||1800)/60),
+        title: a.name || a.type || 'Intervals Activity',
+        rpe: a.perceived_exertion ? Math.round(a.perceived_exertion) : (a.icu_training_load ? Math.min(10, Math.max(3, Math.round(a.icu_training_load/15))) : 6),
+        type: typeMap[a.type] || 'other',
+        notes: `ICU: ${a.type} • ${a.distance ? (a.distance/1000).toFixed(1)+'km' : ''} ${a.icu_training_load ? '• Load '+a.icu_training_load : ''} ${a.description||''}`,
+        source:'icu',
+        load: a.icu_training_load||null
+      };
+      state.workouts.push(w); imported++;
+    });
+    saveState(); renderAll();
+    $('#icuActivities').innerHTML=activities.slice(0,12).map(a=>`<div class="log-item"><div class="log-icon">📊</div><div class="log-main"><div class="log-title">${a.start_date_local?.slice(0,10)} — ${a.name||a.type} • ${a.icu_training_load||'?'} load</div><div class="log-sub">${a.type} • ${a.distance? (a.distance/1000).toFixed(1)+'km' : ''} • ${(a.moving_time/60).toFixed(0)}m</div></div><div class="pill mono">${a.icu_training_load||'-'}</div></div>`).join('') || '<div class="empty">No activities</div>';
+    $('#icuLastSync').textContent=`Synced ${new Date().toLocaleTimeString()}`;
+    alert(`✅ Pulled ${activities.length} activities, imported ${imported} new to ADAPT.`);
+  }catch(e){alert('Fetch failed: '+e.message)}
+  finally{btn.textContent=orig; btn.disabled=false; updateIcuUI()}
+}
+async function fetchIcuWellness(){
+  const btn=$('#actionFetchWellness'); const orig=btn.textContent; btn.textContent='Pulling...'; btn.disabled=true;
+  try{
+    const endpoint=`/athlete/${state.intervals.athleteId}/wellness?oldest=${addDays(todayStr(),-7)}&newest=${todayStr()}`;
+    const wellness=await intervalsFetch(endpoint);
+    const latest=wellness[wellness.length-1]||wellness;
+    if(Array.isArray(wellness) && wellness.length){ 
+      const w=wellness[wellness.length-1];
+      state.intervals.lastWellness={ctl:w.ctl, atl:w.atl, rampRate:w.rampRate, hrv:w.hrv, rhr:w.restingHR, sleep:w.sleepSecs ? Math.round(w.sleepSecs/3600*10)/10+'h' : null, weight:w.weight};
+    } else {
+      state.intervals.lastWellness=wellness;
+    }
+    saveState();
+    $('#icuWellness').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="r-group"><label>CTL (Fitness)</label><b style="font-size:18px">${(state.intervals.lastWellness.ctl||'—')}</b></div>
+      <div class="r-group"><label>ATL (Fatigue)</label><b style="font-size:18px">${(state.intervals.lastWellness.atl||'—')}</b></div>
+      <div class="r-group"><label>Form = CTL-ATL</label><b>${state.intervals.lastWellness.ctl && state.intervals.lastWellness.atl ? (state.intervals.lastWellness.ctl-state.intervals.lastWellness.atl).toFixed(1) : '—'}</b></div>
+      <div class="r-group"><label>HRV / RHR</label><b>${state.intervals.lastWellness.hrv||'—'} / ${state.intervals.lastWellness.rhr||'—'}</b></div>
+    </div><div class="tip">Wellness auto-feeds ADAPT readiness guardrail: if ATL > 1.5×CTL, hard days downgrade.</div>`;
+    renderToday();
+  }catch(e){alert('Wellness fetch failed: '+e.message)}
+  finally{btn.textContent=orig; btn.disabled=false}
+}
+async function pushWorkoutToIcu(workout, dateStr){
+  // POST /athlete/{id}/events — creates calendar event
+  // Format per ICU API docs for workout: https://intervals.icu/api
+  const event={
+    start_date_local: dateStr + 'T08:00:00',
+    category: 'WORKOUT',
+    name: workout.title,
+    description: `${workout.desc}\n\nADAPT generated • RPE ${workout.rpe}/10 • ${workout.dur}min • Type: ${workout.type}\nReadiness: ${state.readiness.score}%`,
+    type: workout.type==='run'?'Run':workout.type==='strength'?'WeightTraining':workout.type==='cycle'?'Ride':'Workout',
+    // For ICU structured workout, could include workout_doc
+  };
+  try{
+    const endpoint=`/athlete/${state.intervals.athleteId}/events`;
+    const result=await intervalsFetch(endpoint,'POST',event);
+    return result;
+  }catch(e){throw e}
+}
+async function pushTodayToIcu(){
+  if(!state.intervals.connected) return alert('Connect Intervals.icu first in ICU tab');
+  const adapted=adaptToday(); if(!adapted) return alert('No workout today');
+  const btn=$('#pushToIcuBtn'); const orig=btn.textContent; btn.textContent='Pushing...'; btn.disabled=true;
+  try{await pushWorkoutToIcu(adapted, adapted.date); alert(`✅ Pushed "${adapted.title}" to Intervals.icu calendar for ${adapted.date}`)}catch(e){alert('Push failed: '+e.message)}finally{btn.textContent=orig; btn.disabled=false}
+}
+async function pushWeekToIcu(){
+  if(!state.intervals.connected) return alert('Connect Intervals.icu first');
+  const btn=$('#pushWeekToIcu')||$('#actionPushPlan'); const orig=btn.textContent; btn.textContent='Pushing 7 days...'; btn.disabled=true;
+  try{
+    const upcoming=state.plan.filter(p=>p.date>=todayStr()).slice(0,7);
+    for(const p of upcoming){ await pushWorkoutToIcu(p,p.date); await new Promise(r=>setTimeout(r,400)); }
+    alert(`✅ Pushed ${upcoming.length} workouts to ICU`);
+  }catch(e){alert('Push failed: '+e.message)}finally{btn.textContent=orig.includes('Push')?orig:'↗ Push 14-day plan as workouts to ICU calendar'; btn.disabled=false}
+}
+function saveIcuFromInputs(){
+  state.intervals.athleteId=$('#icuAthleteId').value.trim();
+  state.intervals.apiKey=$('#icuApiKey').value.trim();
+  state.intervals.useProxy=$('#icuUseProxy').checked;
+  state.intervals.proxyUrl=$('#icuProxyUrl').value.trim()||'/api/intervals';
+  saveState();
+}
+function updateIcuUI(){
+  const cfg=state.intervals;
+  $('#icuAthleteId').value=cfg.athleteId||'';
+  $('#icuApiKey').value=cfg.apiKey||'';
+  $('#icuUseProxy').checked=cfg.useProxy||false;
+  $('#icuProxyUrl').value=cfg.proxyUrl||'/api/intervals';
+  $('#proxyField').style.display=cfg.useProxy?'block':'none';
+  $('#icuConnPill').textContent=cfg.connected?'● Connected — '+cfg.athleteId:'Not connected';
+  $('#icuConnPill').style.background=cfg.connected?'rgba(34,197,94,0.15)':'var(--card)';
+  $('#icuConnPill').style.color=cfg.connected?'#22c55e':'var(--muted)';
+  $('#icuStatus').style.display=cfg.connected?'flex':'none';
+  $('#icuStatusText').textContent=cfg.connected?`ICU Live — ${cfg.athleteId}`:'';
+  $('#icuLinkedBadge').style.display=cfg.connected?'inline-flex':'none';
+  $('#icuLoadBadge').style.display=cfg.connected?'inline-flex':'none';
+  $('#icuLastSync').textContent=cfg.lastSync?`Last sync ${new Date(cfg.lastSync).toLocaleTimeString()}`:'Never';
+}
+
+// UI renders (same as before but with ICU hooks)
+function renderToday(){
+  const adapted=adaptToday();
+  const badgeEl=$('#todayBadge'); const titleEl=$('#todayTitle'); const descEl=$('#todayDesc'); const metaEl=$('#todayMeta'); const noteEl=$('#adaptNote');
+  if(!adapted){titleEl.textContent="Off — Active recovery recommended";descEl.textContent="No planned session. 15 min walk counts.";badgeEl.className="workout-badge badge-recovery";badgeEl.textContent="RECOVERY • 15 MIN";metaEl.innerHTML="";noteEl.innerHTML="<span>🧘</span><div>ADAPT: Rest is training.</div>";return}
+  badgeEl.className=`workout-badge badge-${adapted.badge}`;badgeEl.textContent=`${adapted.badge.toUpperCase()} • ${adapted.dur} MIN • ${adapted.type.toUpperCase()}`;titleEl.textContent=adapted.title;descEl.textContent=adapted.desc;metaEl.innerHTML=`<div class="meta-chip">⏱ ${adapted.dur} min</div><div class="meta-chip">🎯 RPE ${adapted.rpe}/10</div><div class="meta-chip">📅 ${fmtDate(adapted.date)}</div><div class="meta-chip">🧩 ${adapted.type}</div>`;noteEl.innerHTML=`<span>🧠</span><div><b>ADAPT: </b>${adapted.adaptNote}</div>`;
+  const score=state.readiness.checked?state.readiness.score:55;$('#dial').style.setProperty('--pct',score+'%');$('#dialScore').textContent=state.readiness.checked?score:'--';$('#readinessLabel').textContent=!state.readiness.checked?'Tap check-in':score>=75?'Primed':score>=55?'Good to go':score>=35?'Manageable':'Recovery mode';$('#readinessStatus').textContent=state.readiness.checked?(state.readiness.date===todayStr()?'CHECKED TODAY':'CHECKED'):'NOT CHECKED';$('#readinessSub').textContent=state.readiness.checked?`Sleep ${state.readiness.sleep} • Soreness ${state.readiness.sore}`:'5 sliders, 12 sec';renderWeekStrip();renderKPIs();updateIcuUI();
+}
+function renderKPIs(){const last7=state.workouts.filter(w=>{const d=new Date(w.date);const now=new Date();return (now-d)/(1000*3600*24)<=7});const planned7=state.plan.filter(p=>{const d=new Date(p.date);const now=new Date();const diff=(now-d)/(1000*3600*24);return diff>=0 && diff<=7 && p.planned}).length||state.profile.days;const comp=planned7?Math.round(last7.length/planned7*100):0;$('#kpiComp').textContent=comp+'%';$('#kpiCompFill').style.width=comp+'%';const avgRpe=last7.length?(last7.reduce((a,b)=>a+b.rpe,0)/last7.length):0;$('#kpiFatigue').textContent=avgRpe>=8?'High':avgRpe>=6.5?'Moderate':avgRpe>0?'Low':'Fresh';$('#kpiFatigueSub').textContent=last7.length?`avg RPE ${avgRpe.toFixed(1)} last 7d`:'log 2-3 to calibrate'}
+function renderWeekStrip(){const start=todayStr();const container=$('#weekStrip');container.innerHTML='';for(let i=0;i<7;i++){const date=addDays(start,i);const plan=state.plan.find(p=>p.date===date);const logged=state.workouts.find(w=>w.date===date);const card=document.createElement('div');card.className='day-card'+(date===todayStr()?' today':'')+(logged?' done':'');const badgeCls=plan?`badge-${plan.badge}`:'badge-recovery';card.innerHTML=`<div class="day-top"><div class="day-name">${dow(date)} • ${fmtDate(date)}</div><div class="check">${logged?'✓':''}</div></div><div class="workout-badge ${badgeCls}" style="font-size:10px">${plan?plan.badge:'OFF'}</div><div class="day-title">${logged?logged.title:plan?plan.title:'Off / Walk'}</div><div style="font-size:11px;color:var(--muted)">${logged?`RPE ${logged.rpe} • ${logged.duration}m` : plan?`${plan.dur}m • ${plan.type}`:'15m steps'}</div>`;card.onclick=()=>{if(logged){openLogModal(logged)}else if(plan){openSwapForDate(date)}};container.appendChild(card)}}
+function renderPlan(){$('#planGoalLabel').textContent=state.profile.goal.toUpperCase();const phaseNum=Math.floor((new Date()-new Date(state.plan[0]?.date||todayStr()))/(7*86400000))+1;$('#planPhase').textContent=`BASE • WK ${Math.max(1,phaseNum)}/4`;const list=$('#planList');list.innerHTML='';const upcoming=state.plan.filter(p=>p.date>=todayStr()).slice(0,12);if(!upcoming.length){list.innerHTML='<div class="empty">No plan. Hit Setup → Generate.</div>';return}upcoming.forEach(p=>{const logged=state.workouts.some(w=>w.date===p.date);const row=document.createElement('div');row.className='log-item';row.innerHTML=`<div class="log-icon" style="background:${p.badge==='hard'?'rgba(239,68,68,0.15)':p.badge==='mid'?'rgba(234,179,8,0.12)':p.badge==='easy'?'rgba(34,197,94,0.12)':'rgba(96,165,250,0.12)'}">${p.type==='run'?'🏃':p.type==='strength'?'🏋️':p.type==='cycle'?'🚴':'🧘'}</div><div class="log-main"><div class="log-title">${fmtDate(p.date)} — ${p.title} ${logged?'• DONE':''}</div><div class="log-sub"><span>${p.dur}m • RPE ${p.rpe}</span><span class="workout-badge badge-${p.badge}" style="font-size:10px;padding:2px 6px">${p.badge}</span></div></div><button class="btn btn-ghost btn-sm">${logged?'View':'Swap'}</button>`;row.querySelector('button').onclick=()=>{if(logged){const w=state.workouts.find(x=>x.date===p.date);openLogModal(w)}else openSwapForDate(p.date)};list.appendChild(row)});renderLoadChart();renderCoachNotes()}
+function renderLoadChart(){const canvas=$('#loadCanvas');const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);const planned=state.plan.slice(0,21).map(p=>p.dur*(p.rpe/6));const actualMap={};state.workouts.forEach(w=>{actualMap[w.date]=w.duration*(w.rpe/6)});const actual=state.plan.slice(0,21).map(p=>actualMap[p.date]??null);const max=Math.max(...planned,...actual.filter(v=>v!==null),80);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;for(let i=0;i<=4;i++){const y=20+i*(H-50)/4;ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(W-20,y);ctx.stroke()}function drawLine(arr,color,dashed=false){ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;if(dashed)ctx.setLineDash([6,6]);else ctx.setLineDash([]);let started=false;arr.forEach((v,i)=>{if(v===null){started=false;return}const x=40+i*(W-60)/(arr.length-1);const y=20+(1-v/max)*(H-60);if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y)});ctx.stroke();ctx.setLineDash([])}drawLine(planned,'rgba(255,255,255,0.18)',true);drawLine(actual,'#C6FF2A');if(state.intervals.lastWellness && state.intervals.lastWellness.ctl){const ctl=state.intervals.lastWellness.ctl/2;ctx.beginPath();ctx.strokeStyle='rgba(96,165,250,0.5)';ctx.setLineDash([3,6]);ctx.moveTo(40,20+(1-ctl/max)*(H-60));ctx.lineTo(W-20,20+(1-ctl/max)*(H-60));ctx.stroke();ctx.setLineDash([])}}
+function renderCoachNotes(){const c=$('#coachNotes');const recentRpe=state.workouts.slice(-3).map(w=>w.rpe);const avg=recentRpe.length?recentRpe.reduce((a,b)=>a+b)/recentRpe.length:6;const notes=[];if(avg>=8)notes.push({t:'Fatigue creeping',d:'Last 3 avg RPE '+avg.toFixed(1)+'. Next hard day auto-swapped to moderate. Sleep + protein.'});else if(avg<=5.5 && state.workouts.length>4)notes.push({t:'You are adapting fast',d:'RPE low. ADAPT will add one set or 5% next similar session.'});else notes.push({t:'Steady state',d:'You are in 68-82% sweet spot where growth compounds.'});const missed=state.plan.filter(p=>new Date(p.date)<new Date() && p.date>=addDays(todayStr(),-7) && !state.workouts.some(w=>w.date===p.date)).length;if(missed>0)notes.push({t:`${missed} missed this week`,d:'No guilt. Plan redistributed: volume moved to shorter wins.'});if(state.intervals.lastWellness && state.intervals.lastWellness.atl && state.intervals.lastWellness.ctl){const atl=state.intervals.lastWellness.atl,ctl=state.intervals.lastWellness.ctl;if(atl/ctl>1.5)notes.push({t:`ICU Form Risk — ATL/CTL ${(atl/ctl).toFixed(2)}`,d:`ATL ${atl.toFixed(1)} high vs CTL ${ctl.toFixed(1)}. ADAPT forcing deload bias until form recovers.`})}
+ notes.push({t:'Deload logic',d:'Every 4th week or when RPE spikes 2 weeks, ADAPT inserts deload (40% volume cut).'});c.innerHTML=notes.map(n=>`<div style="padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--border)"><div style="font-weight:600;font-size:13px;margin-bottom:4px">${n.t}</div><div style="font-size:12px;color:var(--muted);line-height:1.5">${n.d}</div></div>`).join('')}
+function renderCalendar(){const cur=new Date(state.calCursor+'T12:00:00');const year=cur.getFullYear(),month=cur.getMonth();$('#calMonth').textContent=cur.toLocaleDateString(undefined,{month:'long',year:'numeric'}).toUpperCase();$('#calHead').innerHTML=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="cal-head">${d}</div>`).join('');const first=new Date(year,month,1);const startDay=(first.getDay()+6)%7;const daysInMonth=new Date(year,month+1,0).getDate();const grid=$('#calGrid');grid.innerHTML='';for(let i=0;i<startDay;i++){const d=document.createElement('div');d.className='cal-day';d.style.visibility='hidden';grid.appendChild(d)}for(let d=1;d<=daysInMonth;d++){const dateStr=new Date(year,month,d).toISOString().slice(0,10);const has=state.workouts.some(w=>w.date===dateStr);const plan=state.plan.find(p=>p.date===dateStr);const el=document.createElement('div');el.className='cal-day'+(has?' has-log':'')+(dateStr===todayStr()?' today':'');el.innerHTML=`<b>${d}</b><span style="font-size:10px;color:var(--muted)">${plan?plan.badge.slice(0,2).toUpperCase():''}</span>`;el.onclick=()=>{const wLog=state.workouts.find(w=>w.date===dateStr);if(wLog)openLogModal(wLog);else{$('#logDate').value=dateStr;openLogModal(null)}};grid.appendChild(el)}}
+function renderLog(){const filter=$('#logFilter').value;const list=$('#logList');let items=[...state.workouts].sort((a,b)=>new Date(b.date)-new Date(a.date));if(filter!=='all')items=items.filter(w=>w.type===filter);$('#logCount').textContent=`${items.length} entries`;if(!items.length){list.innerHTML='<div class="empty">No logs yet. Hit + to log your first session.</div>';return}list.innerHTML='';items.forEach(w=>{const div=document.createElement('div');div.className='log-item';const color=w.rpe>=8?'var(--red)':w.rpe>=6?'var(--yellow)':'var(--green)';div.innerHTML=`<div class="log-icon" style="background:${w.type==='run'?'rgba(34,197,94,0.12)':w.type==='strength'?'rgba(167,139,250,0.12)':w.type==='cycle'?'rgba(96,165,250,0.12)':'rgba(255,255,255,0.06)'}">${w.type==='run'?'🏃':w.type==='strength'?'🏋️':w.type==='cycle'?'🚴':w.type==='mobility'?'🧘':'⚡️'}${w.source==='icu'?' <span style="font-size:9px;color:var(--blue)">ICU</span>':''}</div><div class="log-main"><div class="log-title">${fmtDate(w.date)} — ${w.title}</div><div class="log-sub"><span>${w.duration}m • ${w.type}</span><span>${w.notes? '“'+w.notes.slice(0,40)+'”':''}</span></div><div class="rpe-bar"><div class="rpe-fill" style="width:${w.rpe*10}%;background:${color}"></div></div></div><div style="text-align:right"><div class="mono" style="font-weight:700">RPE ${w.rpe}</div><div style="font-size:11px;color:var(--muted)">${w.duration}m</div></div>`;div.onclick=()=>openLogModal(w);list.appendChild(div)});renderCalendar();renderVolume()}
+function renderVolume(){const container=$('#volumeBreakdown');const types=['run','strength','cycle','mobility','other'];const totals={};types.forEach(t=>totals[t]=0);state.workouts.forEach(w=>{totals[w.type]=(totals[w.type]||0)+w.duration});const max=Math.max(...Object.values(totals),1);container.innerHTML=types.map(t=>{const v=totals[t]||0;const pct=(v/max*100);const col=t==='run'?'var(--green)':t==='strength'?'var(--purple)':t==='cycle'?'var(--blue)':t==='mobility'?'var(--accent)':'var(--muted)';return `<div class="bar-row"><div class="bar-label">${t}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div><div class="mono" style="font-size:12px;width:44px;text-align:right">${v}m</div></div>`}).join('')}
+function renderInsights(){const total=state.workouts.length;const avgRpe=total?(state.workouts.reduce((a,b)=>a+b.rpe,0)/total).toFixed(1):'—';$('#insRpe').textContent=avgRpe;$('#insRpeBar').style.width=total? (avgRpe*10)+'%':'0%';$('#insAdapt').textContent=state.stats.adaptations;$('#insStreak').textContent=(state.stats.bestStreak||0)+' days';$('#streakVal').textContent=state.stats.streak||0;$('#insAdaptDesc').textContent=state.stats.adaptations?`Plan adapted ${state.stats.adaptations} times to keep you consistent.`:'Log more to trigger smart deloads.';renderTrend();renderFocus()}
+function renderTrend(){const canvas=$('#trendCanvas');const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);const data=state.workouts.slice(-30);if(data.length<2){ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='13px Geist';ctx.fillText('Log at least 2 workouts to see trend…',20,40);return}const vals=data.map(d=>d.duration*(d.rpe/6));const max=Math.max(...vals,10);ctx.strokeStyle='rgba(255,255,255,0.06)';for(let i=0;i<=3;i++){const y=30+i*(H-60)/3;ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(W-20,y);ctx.stroke()}ctx.beginPath();ctx.strokeStyle='#C6FF2A';ctx.lineWidth=2.5;vals.forEach((v,i)=>{const x=40+i*(W-80)/(vals.length-1);const y=30+(1-v/max)*(H-80);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke();vals.forEach((v,i)=>{const x=40+i*(W-80)/(vals.length-1);const y=30+(1-v/max)*(H-80);ctx.fillStyle=data[i].rpe>=8?'#ef4444':data[i].rpe>=6?'#eab308':'#22c55e';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()})}
+function renderFocus(){const cont=$('#focusList');const recentTypes=state.workouts.slice(-10).map(w=>w.type);const runCount=recentTypes.filter(t=>t==='run').length;const strCount=recentTypes.filter(t=>t==='strength').length;const suggestions=[];if(state.profile.goal==='hybrid'||state.profile.goal==='strength'){if(strCount<3)suggestions.push({i:'🏋️',t:'Strength frequency',d:'Add one more lift this week. Frequency > marathon sessions.'})}if(runCount===0&&state.profile.equip.includes('run'))suggestions.push({i:'🏃',t:'Easy aerobic',d:'Your engine needs Zone 2. 30 min easy run at RPE 5.'});const avgRpe=state.workouts.length?state.workouts.slice(-7).reduce((a,b)=>a+b.rpe,0)/Math.min(7,state.workouts.length):6;if(avgRpe>7.8)suggestions.push({i:'🧘',t:'Deload recommended',d:'Avg RPE last week high. ADAPT suggests 40% deload for 2 days.'});if(suggestions.length===0)suggestions.push({i:'✨',t:'Keep the streak',d:'You are in green zone. Don’t chase hero days. Show up, log RPE honestly.'});cont.innerHTML=suggestions.map(s=>`<div class="log-item" style="align-items:flex-start"><div class="log-icon" style="font-size:20px">${s.i}</div><div class="log-main"><div class="log-title">${s.t}</div><div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">${s.d}</div></div></div>`).join('')}
+
+function openLogModal(existing){$('#logOverlay').classList.add('open');if(existing){state.editingId=existing.id;$('#logModalTitle').textContent='Edit log';$('#logDate').value=existing.date;$('#logDuration').value=existing.duration;$('#logTitle').value=existing.title;$('#logRpe').value=existing.rpe;$('#logRpeVal').textContent=existing.rpe;$('#logRpeTxt').textContent=existing.rpe>=8?'Hard':existing.rpe>=6?'Moderate':existing.rpe>=4?'Easy':'Recovery';$('#logNotes').value=existing.notes||'';$$('#logTypeChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.type===existing.type));$('#deleteLogBtn').style.display='inline-flex'}else{state.editingId=null;$('#logModalTitle').textContent='Log workout';$('#logDate').value=$('#logDate').value||todayStr();$('#logDuration').value=state.profile.sessionLen||45;$('#logTitle').value='';$('#logRpe').value=6;$('#logRpeVal').textContent=6;$('#logRpeTxt').textContent='Moderate';$('#logNotes').value='';$$('#logTypeChips .chip').forEach((c,i)=>c.classList.toggle('active',i===0));$('#deleteLogBtn').style.display='none'}}
+function closeOverlay(id){$('#'+id).classList.remove('open')}
+function openSwapForDate(dateStr){const plan=state.plan.find(p=>p.date===dateStr)||{date:dateStr,title:'Custom',desc:'',type:'other',dur:30,badge:'mid'};const lib=libraryForGoal(state.profile.goal);const opts=Object.values(lib);$('#swapOverlay').classList.add('open');const box=$('#swapOptions');box.innerHTML=`<div style="font-size:13px;color:var(--muted);margin-bottom:8px">Current: <b style="color:var(--text)">${plan.title} • ${plan.dur}m</b> on ${fmtDate(dateStr)}</div>`;opts.forEach(o=>{const btn=document.createElement('button');btn.className='log-item';btn.style.width='100%';btn.style.textAlign='left';btn.innerHTML=`<div class="log-icon" style="background:rgba(198,255,42,0.1)">⇄</div><div class="log-main"><div class="log-title">${o.title}</div><div class="log-sub">${o.dur}m • ${o.type} • ${o.desc.slice(0,70)}…</div></div><div class="pill">${o.badge}</div>`;btn.onclick=()=>{const idx=state.plan.findIndex(p=>p.date===dateStr);const newItem={date:dateStr,title:o.title,desc:o.desc,type:o.type,dur:o.dur,rpe:o.rpe,badge:o.badge,planned:true,source:'swap',id:'p_'+dateStr+'_swapped'};if(idx>=0)state.plan[idx]=newItem;else state.plan.push(newItem);state.stats.adaptations=(state.stats.adaptations||0)+1;saveState();closeOverlay('swapOverlay');renderAll()};box.appendChild(btn)})}
+function renderAll(){renderToday();renderPlan();renderLog();renderInsights();updateIcuUI()}
+
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{$$('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const name=t.dataset.tab;['today','plan','log','insights','icu'].forEach(v=>{$('#view-'+v).style.display=v===name?'block':'none'})}));
+['sleep','sore','stress','motiv','energy'].forEach(k=>{const id='rng-'+k;const vId='v-'+k;$('#'+id).addEventListener('input',e=>{$('#'+vId).textContent=e.target.value;state.readiness[k]=parseInt(e.target.value);const sc=calcReadinessScore();$('#dial').style.setProperty('--pct',sc+'%');$('#dialScore').textContent=sc})});
+$('#saveReadiness').addEventListener('click',()=>{state.readiness.score=calcReadinessScore();state.readiness.checked=true;state.readiness.date=todayStr();saveState();renderToday()});
+$('#completeToday').addEventListener('click',()=>{const adapted=adaptToday();if(!adapted)return;$('#logDate').value=adapted.date;$('#logDuration').value=adapted.dur;$('#logTitle').value=adapted.title;$('#logTypeChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.type===adapted.type));$('#logRpe').value=adapted.rpe;$('#logRpeVal').textContent=adapted.rpe;openLogModal(null);setTimeout(()=>{$('#logDate').value=adapted.date;$('#logDuration').value=adapted.dur;$('#logTitle').value=adapted.title;$('#logRpe').value=adapted.rpe;$('#logRpeVal').textContent=adapted.rpe;$$('#logTypeChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.type===adapted.type))},20)});
+$('#skipToday').addEventListener('click',()=>openSwapForDate(todayStr()));
+$$('#logTypeChips .chip').forEach(ch=>{ch.addEventListener('click',()=>{$$('#logTypeChips .chip').forEach(c=>c.classList.remove('active'));ch.classList.add('active')})});
+$('#logRpe').addEventListener('input',e=>{$('#logRpeVal').textContent=e.target.value;const v=parseInt(e.target.value);$('#logRpeTxt').textContent=v>=9?'All out':v>=8?'Hard':v>=6?'Moderate':v>=4?'Easy':'Recovery'});
+$('#saveLogBtn').addEventListener('click',async()=>{
+  const type=$('#logTypeChips .chip.active')?.dataset.type||'other';
+  const data={id:state.editingId||'w_'+Date.now(),date:$('#logDate').value||todayStr(),duration:parseInt($('#logDuration').value)||30,title:$('#logTitle').value||(type.charAt(0).toUpperCase()+type.slice(1)+' Session'),rpe:parseInt($('#logRpe').value)||6,type,notes:$('#logNotes').value||''};
+  const idx=state.workouts.findIndex(w=>w.id===data.id);
+  if(idx>=0)state.workouts[idx]=data;else state.workouts.push(data);
+  const dates=[...new Set(state.workouts.map(w=>w.date))].sort();let streak=0;let cur=new Date();cur.setHours(12,0,0,0);for(let i=0;i<30;i++){const ds=cur.toISOString().slice(0,10);if(dates.includes(ds)){streak++;cur.setDate(cur.getDate()-1)}else break}
+  state.stats.streak=streak;state.stats.bestStreak=Math.max(state.stats.bestStreak||0,streak);saveState();closeOverlay('logOverlay');renderAll();
+  if($('#logPushIcu').checked && state.intervals.connected){
+    try{await pushWorkoutToIcu({title:data.title,desc:data.notes,type:data.type,dur:data.duration,rpe:data.rpe}, data.date)}catch(e){console.warn('ICU push failed',e)}
+  }
+});
+$('#deleteLogBtn').addEventListener('click',()=>{if(!state.editingId)return;state.workouts=state.workouts.filter(w=>w.id!==state.editingId);saveState();closeOverlay('logOverlay');renderAll()});
+$('#fab').addEventListener('click',()=>{$('#logDate').value=todayStr();openLogModal(null)});
+$$('[data-quick]').forEach(b=>b.addEventListener('click',()=>{$('#logDate').value=todayStr();const t=b.dataset.quick;$$('#logTypeChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.type===t));openLogModal(null);setTimeout(()=>{$$('#logTypeChips .chip').forEach(c=>c.classList.toggle('active',c.dataset.type===t))},10)}));
+$('#regenPlan').addEventListener('click',()=>{if(confirm('Regenerate 28-day plan from today? Your logs stay.')){generatePlan();renderAll()}});
+$('#exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='adapt-training-log.json';a.click();URL.revokeObjectURL(url)});
+$('#prevMonth').addEventListener('click',()=>{const d=new Date(state.calCursor);d.setMonth(d.getMonth()-1);state.calCursor=d.toISOString().slice(0,10);saveState();renderCalendar()});
+$('#nextMonth').addEventListener('click',()=>{const d=new Date(state.calCursor);d.setMonth(d.getMonth()+1);state.calCursor=d.toISOString().slice(0,10);saveState();renderCalendar()});
+$('#logFilter').addEventListener('change',renderLog);
+$$('.close').forEach(c=>c.addEventListener('click',()=>closeOverlay(c.dataset.close)));
+$$('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+$('#openOnboard').addEventListener('click',()=>$('#onboardOverlay').classList.add('open'));
+let obStep=1;function setObStep(n){obStep=n;$$('.onboard-step').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.step)===n));$$('.progress-dots .dot').forEach((d,i)=>d.classList.toggle('active',i<n))}
+$('#toStep2').addEventListener('click',()=>setObStep(2));$('#backTo1').addEventListener('click',()=>setObStep(1));$('#toStep3').addEventListener('click',()=>setObStep(3));
+$$('#goalChips .chip').forEach(ch=>ch.addEventListener('click',()=>{$$('#goalChips .chip').forEach(c=>c.classList.remove('active'));ch.classList.add('active');state.profile.goal=ch.dataset.goal}));
+$$('#levelChips .chip').forEach(ch=>ch.addEventListener('click',()=>{$$('#levelChips .chip').forEach(c=>c.classList.remove('active'));ch.classList.add('active');state.profile.level=ch.dataset.level}));
+$$('#equipChips .chip').forEach(ch=>ch.addEventListener('click',()=>{ch.classList.toggle('active');const eq=$$('#equipChips .chip.active').map(c=>c.dataset.eq);state.profile.equip=eq}));
+$('#daysPerWeek').addEventListener('change',e=>state.profile.days=e.target.value);$('#sessionLen').addEventListener('change',e=>state.profile.sessionLen=e.target.value);$('#avoidInput').addEventListener('change',e=>state.profile.avoid=e.target.value);
+$('#finishOnboard').addEventListener('click',()=>{generatePlan();saveState();closeOverlay('onboardOverlay');renderAll();setObStep(1)});
+
+// ICU UI events
+$('#icuBtn').addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); $('[data-tab="icu"]').classList.add('active'); ['today','plan','log','insights','icu'].forEach(v=>{$('#view-'+v).style.display=v==='icu'?'block':'none'}); });
+$('#icuUseProxy').addEventListener('change',e=>{$('#proxyField').style.display=e.target.checked?'block':'none';saveIcuFromInputs()});
+$('#saveIcuBtn').addEventListener('click',()=>{saveIcuFromInputs();alert('Saved locally. Now Test Connection.')});
+$('#testIcuBtn').addEventListener('click',testIcuConnection);
+$('#actionFetchActivities').addEventListener('click',fetchIcuActivities);
+$('#importIcuBtn').addEventListener('click',fetchIcuActivities);
+$('#actionFetchWellness').addEventListener('click',fetchIcuWellness);
+$('#actionPushPlan').addEventListener('click',pushWeekToIcu);
+$('#actionPushToday').addEventListener('click',pushTodayToIcu);
+$('#pushToIcuBtn').addEventListener('click',pushTodayToIcu);
+$('#pushWeekToIcu').addEventListener('click',pushWeekToIcu);
+$('#icuAthleteId').addEventListener('change',saveIcuFromInputs);
+$('#icuApiKey').addEventListener('change',saveIcuFromInputs);
+$('#icuProxyUrl').addEventListener('change',saveIcuFromInputs);
+
+if(!state.plan.length){generatePlan();$('#onboardOverlay').classList.add('open')}
+renderAll();
+if(state.workouts.length===0 && !localStorage.getItem('adapt_seeded_v3')){
+  const sample=[{id:'w1',date:addDays(todayStr(),-5),duration:42,title:'Easy Aerobic + Strides',rpe:5,type:'run',notes:'Felt smooth'},{id:'w2',date:addDays(todayStr(),-4),duration:50,title:'Push Power',rpe:7,type:'strength',notes:'Bench 185x5'},{id:'w3',date:addDays(todayStr(),-2),duration:28,title:'Recovery Flow',rpe:3,type:'mobility',notes:'Walk + hip flexors'},{id:'w4',date:addDays(todayStr(),-1),duration:48,title:'Tempo Builder',rpe:8,type:'run',notes:'Hard last interval'}];
+  state.workouts=sample;state.stats.streak=2;state.stats.bestStreak=5;saveState();localStorage.setItem('adapt_seeded_v3','1');renderAll()
+}
+</script>
+</body>
+</html>
