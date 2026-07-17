@@ -4,7 +4,13 @@
 
 ![ADAPT](https://img.shields.io/badge/Status-Launch%20Ready-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue) ![Intervals.icu](https://img.shields.io/badge/Integration-Intervals.icu-%23007AFF) ![PWA](https://img.shields.io/badge/PWA-Ready-purple)
 
-**Live Demo:** GitHub Pages / Vercel / just open `index.html`
+**Live Demo:**
+- **App (Vercel, with ICU proxy):** https://adapt-training-os.vercel.app
+- **App (GitHub Pages):** https://troysfields.github.io/adapt-training-os/
+- **Repo:** https://github.com/troysfields/adapt-training-os
+- **ICU Proxy:** `/api/intervals` (Vercel serverless, `INTERVALS_API_KEY` in encrypted env)
+
+Or just open `index.html` locally.
 
 ### Why ADAPT is different
 
